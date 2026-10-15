@@ -34,7 +34,8 @@
     button.addEventListener('click', () => smoothTo(document.getElementById(button.dataset.target)));
   });
 
-  /* ---------- reveal sections: replay on re-entry ---------- */
+  /* ---------- reveal sections: sections 2-4 replay on re-entry ---------- */
+  const eventSection = $('#eventSection');
   const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
@@ -44,7 +45,20 @@
       }
     });
   }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
-  $$('.reveal-section').forEach((section) => revealObserver.observe(section));
+  $$('.reveal-section').filter((section) => section !== eventSection).forEach((section) => revealObserver.observe(section));
+
+  /* ---------- section 5: reveal only once, then stay visible ---------- */
+  if (eventSection) {
+    const eventOnceObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.02, rootMargin: '0px 0px -2% 0px' });
+    eventOnceObserver.observe(eventSection);
+  }
 
   /* ---------- floating top button: show when section 3 starts ---------- */
   const topButton = $('#topButton');
@@ -223,7 +237,7 @@
   };
 
   const makeFloorPlan = (floor, highlightGrade = null, all = false) => {
-    const shell = document.createElement('div'); shell.className = 'floor-plan-shell';
+    const shell = document.createElement('div'); shell.className = `floor-plan-shell${all ? '' : ' lesson-only'}`;
     const side = document.createElement('div'); side.className = 'floor-side'; side.innerHTML = '<span class="rear">후관</span><span class="main">본관</span>';
     const grid = document.createElement('div'); grid.className = 'floor-grid';
     (floorLayouts[floor] || []).forEach((room) => {
@@ -248,7 +262,8 @@
       }
       grid.appendChild(el);
     });
-    shell.append(side, grid);
+    if (all) shell.append(side, grid);
+    else shell.append(grid);
     return shell;
   };
 
