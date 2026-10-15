@@ -11,45 +11,50 @@
     window.scrollTo({ top, behavior: 'smooth' });
   };
 
-  /* ---------- hero mascot spacing ---------- */
+  /* ---------- hero mascot carousel + spacing ---------- */
   const characterZone = $('#characterZone');
-  const mascot = $('#wonhodoriImage');
+  const mascotStage = $('#heroMascotStage');
   const mascotWrap = $('#wonhodoriWrap');
+  const mascotFrames = $$('.hero-mascot-frame', mascotWrap || document);
 
   const updateMascotGap = () => {
-    if (!characterZone || !mascot) return;
-    const h = mascot.getBoundingClientRect().height;
+    if (!characterZone || !mascotStage) return;
+    const h = mascotStage.getBoundingClientRect().height;
     if (h > 0) characterZone.style.setProperty('--character-gap', `${Math.round(h * 0.25)}px`);
   };
-  mascot?.addEventListener('load', updateMascotGap);
-  if (mascot?.complete) updateMascotGap();
+  mascotFrames.forEach((img) => img.addEventListener('load', updateMascotGap));
+  updateMascotGap();
   window.addEventListener('resize', updateMascotGap, { passive: true });
-  mascotWrap?.addEventListener('animationend', () => mascotWrap.classList.add('float'));
+  mascotWrap?.addEventListener('animationend', (event) => {
+    if (event.animationName === 'characterEnter') mascotWrap.classList.add('float');
+  });
 
   /* ---------- quick menu ---------- */
   $$('.quick-card').forEach((button) => {
     button.addEventListener('click', () => smoothTo(document.getElementById(button.dataset.target)));
   });
 
-  /* ---------- reveal sections ---------- */
+  /* ---------- reveal sections: replay on re-entry ---------- */
   const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         entry.target.classList.add('is-visible');
-        revealObserver.unobserve(entry.target);
+      } else {
+        entry.target.classList.remove('is-visible');
       }
     });
-  }, { threshold: 0.08 });
+  }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
   $$('.reveal-section').forEach((section) => revealObserver.observe(section));
 
-  /* ---------- floating top button: section 3 onward ---------- */
+  /* ---------- floating top button: show when section 3 starts ---------- */
   const topButton = $('#topButton');
   const tasksSection = $('#tasksSection');
   const quickMenu = $('#quickMenu');
   const updateTopButton = () => {
     if (!topButton || !tasksSection) return;
-    const threshold = tasksSection.offsetTop - 120;
-    topButton.classList.toggle('show', window.scrollY >= threshold);
+    const rect = tasksSection.getBoundingClientRect();
+    const shouldShow = rect.top <= window.innerHeight - 36;
+    topButton.classList.toggle('show', shouldShow);
   };
   window.addEventListener('scroll', updateTopButton, { passive: true });
   window.addEventListener('resize', updateTopButton, { passive: true });
@@ -236,6 +241,8 @@
         el.innerHTML = '중앙<br>현관';
       } else if (room.label === '수학체험실') {
         el.innerHTML = '수학<br>체험실';
+      } else if (room.type === 'connector') {
+        el.innerHTML = '<span class="vtxt"><span>연</span><span>결</span><span>통</span><span>로</span></span>';
       } else {
         el.textContent = room.label || '';
       }
